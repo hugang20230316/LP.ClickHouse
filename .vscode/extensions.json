@@ -1,0 +1,24 @@
+{
+    "recommendations": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-vscode.vscode-json",
+        "ms-vscode.powershell",
+        "ms-vscode-remote.remote-containers",
+        "ms-azuretools.vscode-docker",
+        "formulahendry.dotnet-test-explorer",
+        "ms-vscode.test-adapter-converter",
+        "redhat.vscode-yaml",
+        "ms-vscode.vscode-typescript-next",
+        "christian-kohler.path-intellisense",
+        "ms-vscode-remote.remote-wsl",
+        "gruntfuggly.todo-tree",
+        "ms-vscode.vscode-eslint",
+        "esbenp.prettier-vscode"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.vscode-typescript",
+        "ms-vscode.vscode-eslint",
+        "esbenp.prettier-vscode"
+    ]
+}

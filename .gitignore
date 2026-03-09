@@ -1,0 +1,32 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.log
+TestResults/
+
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+
+# Docker
+docker/*/data/
+docker/*/logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# NuGet
+packages/
+*.nupkg
+
+# Build
+build/
+dist/

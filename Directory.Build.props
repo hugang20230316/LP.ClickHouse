@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ClickHouseDriverVersion>1.0.0</ClickHouseDriverVersion>
+    <MicrosoftExtensionsVersion>10.0.2</MicrosoftExtensionsVersion>
+    <MicrosoftConfigurationVersion>10.0.2</MicrosoftConfigurationVersion>
+  </PropertyGroup>
+</Project>
+

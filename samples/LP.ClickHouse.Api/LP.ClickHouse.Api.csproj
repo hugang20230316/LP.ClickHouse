@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>LP.ClickHouse.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\LP.ClickHouse.Core\LP.ClickHouse.Core.csproj" />
+  </ItemGroup>
+</Project>

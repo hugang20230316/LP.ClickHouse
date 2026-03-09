@@ -1,0 +1,178 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "构建项目",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "LP.ClickHouse.slnx"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "运行所有测试",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "test",
+                "LP.ClickHouse.slnx"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "运行单个测试类",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "test",
+                "tests/LP.ClickHouse.Tests",
+                "--filter",
+                "FullyQualifiedName~${input:testClassName}"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "启动 ClickHouse 服务",
+            "type": "shell",
+            "command": "cd",
+            "args": [
+                "docker",
+                "&&",
+                "docker",
+                "compose",
+                "up",
+                "-d"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "停止 ClickHouse 服务",
+            "type": "shell",
+            "command": "cd",
+            "args": [
+                "docker",
+                "&&",
+                "docker",
+                "compose",
+                "down"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "运行示例 API",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "run",
+                "--project",
+                "samples/LP.ClickHouse.Api"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "清理构建文件",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "clean",
+                "LP.ClickHouse.slnx"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "还原 NuGet 包",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "restore",
+                "LP.ClickHouse.slnx"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "testClassName",
+            "description": "输入要运行的测试类名",
+            "default": "ConnectionStringBuilderTests",
+            "type": "promptString"
+        }
+    ]
+}

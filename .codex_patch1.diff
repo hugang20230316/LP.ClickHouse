@@ -1,0 +1,96 @@
+*** Begin Patch
+*** Update File: docs/ClickHouse教程-Part2-实战场景.md
+@@
+ -- 预期查询时间：< 500ms
+ ```
++
++---
++
++## 6. 准 CRUD 场景：订单快照
++
++### 业务场景
++
++电商订单每天会经历多次状态变化：`待支付 → 已支付 → 已发货 → 已签收`。业务既要看“当前最新状态”，又要按城市、时间、状态做聚合分析。
++
++### 问题
++
++ClickHouse 适合高吞吐写入和大范围分析，不适合 MySQL 那种“按主键频繁 UPDATE 单行”的事务型 CRUD。真实项目里应该设计成 **准 CRUD**：
++- **Create**：新增一条快照
++- **Read**：读最新快照或历史版本
++- **Update**：写入更高版本的新快照
++- **Delete**：优先逻辑删除，物理删除只做低频治理
++
++### 方案
++
++使用 `ReplacingMergeTree(version)` 保存订单快照。每次订单状态变化，不改旧数据，而是写一条新版本。
++
++### 实现
++
++```sql
++CREATE TABLE order_snapshots
++(
++    order_id UInt64,
++    user_id UInt64,
++    order_no String,
++    status LowCardinality(String),
++    pay_amount Decimal(18, 2),
++    city LowCardinality(String),
++    created_at DateTime64(3, 'UTC'),
++    updated_at DateTime64(3, 'UTC'),
++    version UInt64,
++    is_deleted UInt8 DEFAULT 0
++)
++ENGINE = ReplacingMergeTree(version)
++PARTITION BY toYYYYMM(created_at)
++ORDER BY (order_id, updated_at)
++TTL created_at + INTERVAL 180 DAY;
++
++-- Create：新建订单
++INSERT INTO order_snapshots VALUES
++(202603090001, 10086, 'NO202603090001', 'PendingPayment', 199.00, '上海', now64(3), now64(3), 1, 0);
++
++-- Update：不要 UPDATE 原行，而是补一条更高版本的新快照
++INSERT INTO order_snapshots VALUES
++(202603090001, 10086, 'NO202603090001', 'Paid', 199.00, '上海', now64(3), now64(3), 2, 0);
++
++-- Read：查订单最新状态，argMax 表示“取 version 最大那行对应的值”
++SELECT order_id, argMax(status, version) AS latest_status, max(updated_at) AS latest_updated_at
++FROM order_snapshots
++WHERE order_id = 202603090001 AND is_deleted = 0
++GROUP BY order_id;
++
++-- Read：查历史版本
++SELECT order_id, status, version, updated_at
++FROM order_snapshots
++WHERE order_id = 202603090001
++ORDER BY version;
++
++-- Delete：逻辑删除优先，物理删除只做低频清理
++INSERT INTO order_snapshots VALUES
++(202603090001, 10086, 'NO202603090001', 'Paid', 199.00, '上海', now64(3), now64(3), 3, 1);
++
++ALTER TABLE order_snapshots DELETE WHERE order_id = 202603090001;
++```
++
++### 关键点
++
++1. **ClickHouse 的 CRUD 是业务语义 CRUD**，不是行级事务 CRUD
++2. **高频更新用版本快照**，不要把 mutation 当常规写路径
++3. **查最新值优先用 `argMax`**，比很多子查询写法更直接
++4. **删除优先逻辑删除**，既保留审计能力，也避免频繁重写分片
++
++### 验证
++
++```sql
++SELECT order_id, argMax(status, version) AS latest_status, max(version) AS latest_version
++FROM order_snapshots
++WHERE order_id = 202603090001
++GROUP BY order_id;
++
++-- 预期结果：latest_status = 'Paid'，latest_version = 3（其中 version=3 是删除标记版本）
++```
+ 
+ ---
+ 
+ [下一章：Part 3 - 性能优化](./ClickHouse教程-Part3-性能优化.md)
+*** End Patch
