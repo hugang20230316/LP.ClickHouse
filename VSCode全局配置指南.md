@@ -117,21 +117,25 @@
 在扩展市场安装以下扩展（全局推荐）：
 
 ### 必装扩展
+
 - **C#** (ms-dotnettools.csharp) - C# 语言支持
 - **C# Dev Kit** (ms-dotnettools.csdevkit) - C# 开发工具包
 - **.NET Install Tool** (ms-dotnettools.vscode-dotnet-runtime) - .NET 运行时安装工具
 
 ### 开发效率扩展
+
 - **PowerShell** (ms-vscode.powershell) - PowerShell 支持
 - **Docker** (ms-azuretools.vscode-docker) - Docker 支持
 - **Remote Containers** (ms-vscode-remote.remote-containers) - 容器开发
 - **GitLens** (eamodio.gitlens) - Git 增强功能
 
 ### 测试和调试扩展
+
 - **.NET Core Test Explorer** (formulahendry.dotnet-test-explorer) - .NET 测试浏览器
 - **Test Adapter Converter** (ms-vscode.test-adapter-converter) - 测试适配器转换器
 
 ### 代码质量扩展
+
 - **ESLint** (dbaeumer.vscode-eslint) - JavaScript/TypeScript 代码检查
 - **Prettier** (esbenp.prettier-vscode) - 代码格式化
 - **Code Spell Checker** (streetsidesoftware.code-spell-checker) - 拼写检查
@@ -176,6 +180,7 @@ Copy-Item $env:APPDATA\Code\User\settings.json.backup $env:APPDATA\Code\User\set
 ## 更新说明
 
 VS Code 更新时，某些设置可能需要重新配置。建议：
+
 - 关注 VS Code 更新日志
 - 定期检查设置是否仍然有效
 - 考虑使用 Settings Sync 同步设置到多台设备
