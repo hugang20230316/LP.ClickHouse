@@ -1,0 +1,56 @@
+{
+  "task_id": "TASK-001",
+  "schema_version": 1,
+  "title": "TASK-001 示例：替换成具体业务标题",
+  "goal": "说明需要验证的行为，例如 \"页面在提交后展示新的字段并在日志中记录 trace\"。",
+  "repo": ".",
+  "base_commit": "0000000000000000000000000000000000000000",
+  "setup_script": "setup.ps1",
+  "execution_script": "execute.ps1",
+  "allowed_paths": [
+    "src/**",
+    "tests/**",
+    "scripts/**",
+    "docs/**"
+  ],
+  "forbidden_paths": [
+    ".ai-harness/**"
+  ],
+  "fixtures_manifest": "fixtures/manifest.json",
+  "verifiers": [
+    {
+      "name": "build",
+      "type": "build",
+      "commands": [
+        "<替换成构建命令，例如 dotnet build src/MyProject.sln>"
+      ]
+    },
+    {
+      "name": "test",
+      "type": "test",
+      "commands": [
+        "<替换成相关测试命令，例如 dotnet test src/MyProject.Tests/MyProject.Tests.csproj>"
+      ]
+    },
+    {
+      "name": "diff-scope",
+      "type": "diff-scope"
+    },
+    {
+      "name": "output-check",
+      "type": "output-check",
+      "paths": [
+        "<替换成期望产物相对路径，例如 src/MyProject/bin/Release/net8.0/MyProject.dll>"
+      ]
+    }
+  ],
+  "expected_artifacts": [
+    "<替换成期望产物相对路径，通常与 output-check 保持一致>"
+  ],
+  "timeout_sec": 900
+  ,
+  "notes": {
+    "report_reference": "运行后阅读 .ai-harness/HARNESS_TEST_REPORT.md 里的 10 轮表格，确认 baseline/diff/error 场景是否被覆盖。",
+    "fixtures": "fixtures/manifest.json 里列出的路径应存在于 fixtures/workspace/ 下，setup.ps1 与 execute.ps1 会依赖这些文件。"
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "generated_at": "2026-04-02T09:28:10.6330874+08:00",
+  "task_id": "HARNESS-001",
+  "baseline_path": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\baselines\\HARNESS-001.json",
+  "rounds": [
+    {
+      "round": 1,
+      "scenario": "首次通过，无 baseline",
+      "expected": "exit=0, overall=passed, baseline=not_found",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091729",
+      "overall_status": "passed",
+      "execution_status": "passed",
+      "baseline_status": "not_found",
+      "error": "",
+      "failed_verifier": "",
+      "failed_message": ""
+    },
+    {
+      "round": 2,
+      "scenario": "提升 baseline",
+      "expected": "exit=0, overall=passed, baseline=promoted",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091745",
+      "overall_status": "passed",
+      "execution_status": "passed",
+      "baseline_status": "promoted",
+      "error": "",
+      "failed_verifier": "",
+      "failed_message": ""
+    },
+    {
+      "round": 3,
+      "scenario": "基线匹配",
+      "expected": "exit=0, overall=passed, baseline=matched",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091802",
+      "overall_status": "passed",
+      "execution_status": "passed",
+      "baseline_status": "matched",
+      "error": "",
+      "failed_verifier": "",
+      "failed_message": ""
+    },
+    {
+      "round": 4,
+      "scenario": "缺失 setup 脚本",
+      "expected": "exit=1, error contains setup script not found",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091820",
+      "overall_status": "failed",
+      "execution_status": "failed",
+      "baseline_status": "not_loaded",
+      "error": "setup script not found: E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\tasks\\HARNESS-001\\missing-setup.ps1",
+      "failed_verifier": "",
+      "failed_message": ""
+    },
+    {
+      "round": 5,
+      "scenario": "build verifier 空命令",
+      "expected": "exit=1, error contains verifier 'build' 必须包含至少一个命令",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091821",
+      "overall_status": "failed",
+      "execution_status": "failed",
+      "baseline_status": "not_loaded",
+      "error": "verifier 'build' 必须包含至少一个命令。",
+      "failed_verifier": "",
+      "failed_message": ""
+    },
+    {
+      "round": 6,
+      "scenario": "allowed_paths 过窄",
+      "expected": "exit=1, diff-scope failed",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091825",
+      "overall_status": "failed",
+      "execution_status": "failed",
+      "baseline_status": "mismatched",
+      "error": "",
+      "failed_verifier": "diff-scope",
+      "failed_message": "改动超出允许范围：src/LP.ClickHouse.Core/Utilities/ClickHouseConnectionStringBuilder.cs"
+    },
+    {
+      "round": 7,
+      "scenario": "forbidden_paths 命中测试文件",
+      "expected": "exit=1, diff-scope failed",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091842",
+      "overall_status": "failed",
+      "execution_status": "failed",
+      "baseline_status": "mismatched",
+      "error": "",
+      "failed_verifier": "diff-scope",
+      "failed_message": "命中禁止改动路径：tests/LP.ClickHouse.Tests/ConnectionStringBuilderTests.cs"
+    },
+    {
+      "round": 8,
+      "scenario": "输出产物不存在",
+      "expected": "exit=1, output-check failed",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091900",
+      "overall_status": "failed",
+      "execution_status": "failed",
+      "baseline_status": "mismatched",
+      "error": "",
+      "failed_verifier": "output-check",
+      "failed_message": "缺少预期产物：tests/LP.ClickHouse.Tests/bin/Debug/net8.0/not-found.dll"
+    },
+    {
+      "round": 9,
+      "scenario": "execute 超时",
+      "expected": "exit=1, execute 失败，exit_code=124",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091918",
+      "overall_status": "failed",
+      "execution_status": "failed",
+      "baseline_status": "not_loaded",
+      "error": "execute 失败，exit_code=124",
+      "failed_verifier": "",
+      "failed_message": ""
+    },
+    {
+      "round": 10,
+      "scenario": "test verifier 强制失败",
+      "expected": "exit=1, baseline_status=mismatched",
+      "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-091921",
+      "overall_status": "failed",
+      "execution_status": "failed",
+      "baseline_status": "mismatched",
+      "error": "",
+      "failed_verifier": "test",
+      "failed_message": "命令失败：Write-Error 'forced harness test failure'; exit 1"
+    }
+  ],
+  "post_review_validation": {
+    "scenario": "子代理修正后的最终稳定复测",
+    "report_directory": "E:\\Projects\\LP\\LP.ClickHouse\\.ai-harness\\reports\\HARNESS-001-20260402-092647",
+    "overall_status": "passed",
+    "execution_status": "passed",
+    "baseline_status": "matched"
+  }
+}

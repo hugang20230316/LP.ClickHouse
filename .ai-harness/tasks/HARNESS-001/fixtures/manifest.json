@@ -1,0 +1,9 @@
+{
+  "files": [
+    "fixtures/workspace/src/LP.ClickHouse.Core/Options/ClickHouseOptions.cs",
+    "fixtures/workspace/src/LP.ClickHouse.Core/Utilities/ClickHouseConnectionStringBuilder.cs",
+    "fixtures/workspace/tests/LP.ClickHouse.Tests/ClickHouseOptionsTests.cs",
+    "fixtures/workspace/tests/LP.ClickHouse.Tests/ConnectionStringBuilderTests.cs",
+    "fixtures/workspace/tests/LP.ClickHouse.Tests/ConnectionStringBuilderFullTests.cs"
+  ]
+}

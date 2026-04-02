@@ -1,0 +1,56 @@
+{
+  "task_id": "HARNESS-001",
+  "schema_version": 1,
+  "title": "为 ClickHouse 连接字符串增加 ClientName 透传",
+  "goal": "在工作副本中为 ClickHouseOptions 增加可选 ClientName，并让 ClickHouseConnectionStringBuilder 在设置值时输出 Client Name 段，同时保证 LP.ClickHouse 全量构建和测试通过。",
+  "repo": ".",
+  "base_commit": "c7bf541964141458f376fe9e728de6360b6e1fb0",
+  "setup_script": "setup.ps1",
+  "execution_script": "execute.ps1",
+  "allowed_paths": [
+    "src/LP.ClickHouse.Core/Options/ClickHouseOptions.cs",
+    "src/LP.ClickHouse.Core/Utilities/ClickHouseConnectionStringBuilder.cs",
+    "tests/LP.ClickHouse.Tests/ClickHouseOptionsTests.cs",
+    "tests/LP.ClickHouse.Tests/ConnectionStringBuilderTests.cs",
+    "tests/LP.ClickHouse.Tests/ConnectionStringBuilderFullTests.cs"
+  ],
+  "forbidden_paths": [
+    ".ai-harness/**"
+  ],
+  "fixtures_manifest": "fixtures/manifest.json",
+  "verifiers": [
+    {
+      "name": "build",
+      "type": "build",
+      "commands": [
+        "dotnet build LP.ClickHouse.slnx -v minimal"
+      ]
+    },
+    {
+      "name": "test",
+      "type": "test",
+      "commands": [
+        "dotnet test LP.ClickHouse.slnx -v minimal"
+      ]
+    },
+    {
+      "name": "diff-scope",
+      "type": "diff-scope"
+    },
+    {
+      "name": "output-check",
+      "type": "output-check",
+      "paths": [
+        "src/LP.ClickHouse.Core/bin/Debug/net8.0/LP.ClickHouse.Core.dll",
+        "tests/LP.ClickHouse.Tests/bin/Debug/net8.0/LP.ClickHouse.Tests.dll"
+      ]
+    }
+  ],
+  "expected_artifacts": [
+    "src/LP.ClickHouse.Core/bin/Debug/net8.0/LP.ClickHouse.Core.dll",
+    "tests/LP.ClickHouse.Tests/bin/Debug/net8.0/LP.ClickHouse.Tests.dll"
+  ],
+  "timeout_sec": 600
+}
+
+

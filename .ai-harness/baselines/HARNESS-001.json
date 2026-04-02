@@ -1,0 +1,11 @@
+{
+  "task_id": "HARNESS-001",
+  "baseline_git_sha": "c7bf541964141458f376fe9e728de6360b6e1fb0",
+  "expected_status": "passed",
+  "verifier_summary": {
+    "build": "passed",
+    "test": "passed",
+    "diff-scope": "passed",
+    "output-check": "passed"
+  }
+}
