@@ -88,6 +88,22 @@ function Read-TaskConfig {
         }
     }
 
+    $repo = [string]$task.repo
+    if ($repo -ne '.') {
+        throw "task.yaml 的 repo 目前仅允许 '.'：$repo"
+    }
+
+    foreach ($field in @('setup_script', 'execution_script', 'fixtures_manifest')) {
+        $value = [string]$task.$field
+        if ([System.IO.Path]::IsPathRooted($value)) {
+            throw "task.yaml 字段禁止使用绝对路径：$field=$value"
+        }
+
+        if (($value -replace '\\', '/') -match '(^|/)\.\.(/|$)') {
+            throw "task.yaml 字段禁止包含上跳路径：$field=$value"
+        }
+    }
+
     if (@($task.allowed_paths).Count -eq 0) {
         throw 'task.yaml 至少需要 1 条 allowed_paths。'
     }
@@ -98,6 +114,17 @@ function Read-TaskConfig {
 
     if (@($task.expected_artifacts).Count -eq 0) {
         throw 'task.yaml 至少需要 1 个 expected_artifacts。'
+    }
+
+    foreach ($path in @($task.expected_artifacts)) {
+        $pathValue = [string]$path
+        if ([System.IO.Path]::IsPathRooted($pathValue)) {
+            throw "expected_artifacts 禁止使用绝对路径：$pathValue"
+        }
+
+        if (($pathValue -replace '\\', '/') -match '(^|/)\.\.(/|$)') {
+            throw "expected_artifacts 禁止包含上跳路径：$pathValue"
+        }
     }
 
     if ([int]$task.timeout_sec -le 0) {
@@ -157,13 +184,13 @@ function Invoke-HarnessCommand {
     $process.Refresh()
 
     if (Test-Path -LiteralPath $tmpOut) {
-        Add-Content -LiteralPath $stdoutPath -Value (Get-Content -LiteralPath $tmpOut -Raw -Encoding utf8) -Encoding utf8
-        Remove-Item -LiteralPath $tmpOut -Force
+        Add-Content -LiteralPath $stdoutPath -Value (Read-HarnessTempLogFile -Path $tmpOut) -Encoding utf8
+        Remove-HarnessTempLogFile -Path $tmpOut
     }
 
     if (Test-Path -LiteralPath $tmpErr) {
-        Add-Content -LiteralPath $stderrPath -Value (Get-Content -LiteralPath $tmpErr -Raw -Encoding utf8) -Encoding utf8
-        Remove-Item -LiteralPath $tmpErr -Force
+        Add-Content -LiteralPath $stderrPath -Value (Read-HarnessTempLogFile -Path $tmpErr) -Encoding utf8
+        Remove-HarnessTempLogFile -Path $tmpErr
     }
 
     return [ordered]@{
@@ -172,6 +199,51 @@ function Invoke-HarnessCommand {
         timed_out         = $timedOut
         command           = $Command
         working_directory = $WorkingDirectory
+    }
+}
+
+function Read-HarnessTempLogFile {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [int]$RetryCount = 20,
+        [int]$RetryDelayMs = 100
+    )
+
+    for ($attempt = 1; $attempt -le $RetryCount; $attempt++) {
+        try {
+            return Get-Content -LiteralPath $Path -Raw -Encoding utf8
+        }
+        catch {
+            if ($attempt -eq $RetryCount) {
+                throw "读取临时日志失败：$Path。$($_.Exception.Message)"
+            }
+
+            Start-Sleep -Milliseconds $RetryDelayMs
+        }
+    }
+
+    return ''
+}
+
+function Remove-HarnessTempLogFile {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [int]$RetryCount = 20,
+        [int]$RetryDelayMs = 100
+    )
+
+    for ($attempt = 1; $attempt -le $RetryCount; $attempt++) {
+        try {
+            Remove-Item -LiteralPath $Path -Force -ErrorAction Stop
+            return
+        }
+        catch {
+            if ($attempt -eq $RetryCount) {
+                throw "删除临时日志失败：$Path。$($_.Exception.Message)"
+            }
+
+            Start-Sleep -Milliseconds $RetryDelayMs
+        }
     }
 }
 
@@ -189,8 +261,75 @@ function Invoke-HarnessScriptStep {
         throw "未找到步骤脚本：$ScriptPath"
     }
 
+    if (-not (Test-Path -LiteralPath $WorkspaceRoot)) {
+        throw "命令工作目录不存在：$WorkspaceRoot"
+    }
+
+    if ($TimeoutSec -le 0) {
+        throw "TimeoutSec 必须大于 0：$TimeoutSec"
+    }
+
+    $stdoutPath = Join-Path -Path $ReportRoot -ChildPath 'stdout.log'
+    $stderrPath = Join-Path -Path $ReportRoot -ChildPath 'stderr.log'
+    $tmpOut = Join-Path -Path $env:TEMP -ChildPath ('{0}-{1}-out.log' -f $StepName, [guid]::NewGuid().ToString('N'))
+    $tmpErr = Join-Path -Path $env:TEMP -ChildPath ('{0}-{1}-err.log' -f $StepName, [guid]::NewGuid().ToString('N'))
+    $argumentList = @(
+        '-NoProfile',
+        '-File',
+        $ScriptPath,
+        '-WorkspaceRoot',
+        $WorkspaceRoot,
+        '-TaskRoot',
+        $TaskRoot,
+        '-ReportRoot',
+        $ReportRoot
+    )
     $command = "`"$ScriptPath`" -WorkspaceRoot `"$WorkspaceRoot`" -TaskRoot `"$TaskRoot`" -ReportRoot `"$ReportRoot`""
-    return Invoke-HarnessCommand -Command $command -WorkingDirectory $WorkspaceRoot -ReportRoot $ReportRoot -StepName $StepName -TimeoutSec $TimeoutSec
+
+    Add-Content -LiteralPath $stdoutPath -Value ("`n=== {0} ===`n{1}`n" -f $StepName, $command) -Encoding utf8
+    Add-Content -LiteralPath $stderrPath -Value ("`n=== {0} ===`n" -f $StepName) -Encoding utf8
+
+    $watch = [System.Diagnostics.Stopwatch]::StartNew()
+    try {
+        $process = Start-Process -FilePath $script:HarnessPwsh `
+            -ArgumentList $argumentList `
+            -WorkingDirectory $WorkspaceRoot `
+            -RedirectStandardOutput $tmpOut `
+            -RedirectStandardError $tmpErr `
+            -PassThru
+    }
+    catch {
+        throw "无法启动脚本 '$ScriptPath'：$($_.Exception.Message)"
+    }
+
+    $timedOut = $false
+    try {
+        Wait-Process -Id $process.Id -Timeout $TimeoutSec -ErrorAction Stop
+    }
+    catch {
+        $timedOut = $true
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+    }
+    $watch.Stop()
+    $process.Refresh()
+
+    if (Test-Path -LiteralPath $tmpOut) {
+        Add-Content -LiteralPath $stdoutPath -Value (Read-HarnessTempLogFile -Path $tmpOut) -Encoding utf8
+        Remove-HarnessTempLogFile -Path $tmpOut
+    }
+
+    if (Test-Path -LiteralPath $tmpErr) {
+        Add-Content -LiteralPath $stderrPath -Value (Read-HarnessTempLogFile -Path $tmpErr) -Encoding utf8
+        Remove-HarnessTempLogFile -Path $tmpErr
+    }
+
+    return [ordered]@{
+        exit_code         = if ($timedOut) { 124 } else { $process.ExitCode }
+        duration_ms       = [int]$watch.Elapsed.TotalMilliseconds
+        timed_out         = $timedOut
+        command           = $command
+        working_directory = $WorkspaceRoot
+    }
 }
 
 function Convert-HarnessGlobToRegex {
@@ -232,10 +371,18 @@ function Get-HarnessEnvironmentInfo {
         ''
     }
 
+    $codexVersion = try {
+        (& codex --version 2>$null | Out-String).Trim()
+    }
+    catch {
+        ''
+    }
+
     return [ordered]@{
         platform           = [System.Environment]::OSVersion.VersionString
         powershell_version = $PSVersionTable.PSVersion.ToString()
         dotnet_version     = $dotnetVersion
+        codex_version      = $codexVersion
     }
 }
 
