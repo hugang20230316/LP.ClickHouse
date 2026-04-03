@@ -150,6 +150,9 @@ $baselineComparison = [ordered]@{
     verifier_differences = @()
 }
 $result = $null
+$failureStage = $null
+$agentStep = $null
+$executionMode = 'fixture-copy'
 
 try {
     $task = Read-TaskConfig -TaskConfigPath $taskConfigPath
@@ -159,6 +162,13 @@ try {
 
     if ([string]::IsNullOrWhiteSpace($task.base_commit)) {
         throw "task.base_commit is required"
+    }
+
+    $executionMode = if ($task.PSObject.Properties.Name.Contains('execution_mode') -and -not [string]::IsNullOrWhiteSpace([string]$task.execution_mode)) {
+        [string]$task.execution_mode
+    }
+    else {
+        'fixture-copy'
     }
 
     $timeoutSec = [int]$task.timeout_sec
@@ -181,6 +191,7 @@ try {
 
     $workspaceRoot = New-HarnessWorkspace -RepoRoot $repoRoot -Commit $task.base_commit -RunId $runId
 
+    $failureStage = 'setup'
     $setupScript = Resolve-AndValidateTaskScript `
         -TaskRoot $taskRoot `
         -RelativePath $task.setup_script `
@@ -200,6 +211,7 @@ try {
         throw "setup 失败，exit_code=$($setupStep.exit_code)"
     }
 
+    $failureStage = 'execute'
     $executionScript = Resolve-AndValidateTaskScript `
         -TaskRoot $taskRoot `
         -RelativePath $task.execution_script `
@@ -219,6 +231,12 @@ try {
         throw "execute 失败，exit_code=$($executionStep.exit_code)"
     }
 
+    $agentResultPath = Join-Path -Path $reportRoot -ChildPath 'artifacts\agent\agent.result.json'
+    if ($executionMode -eq 'agent' -and (Test-Path -LiteralPath $agentResultPath)) {
+        $agentStep = Read-HarnessJsonFile -Path $agentResultPath
+    }
+
+    $failureStage = 'verifier'
     foreach ($verifier in $task.verifiers) {
         $verifierScriptPath = Join-Path -Path $harnessRoot -ChildPath ("verifiers\{0}.ps1" -f $verifier.type)
         if (-not (Test-Path -LiteralPath $verifierScriptPath)) {
@@ -241,6 +259,7 @@ try {
     }
 
     $executionStatus = if (@($verifierResults | Where-Object { $_.status -eq 'failed' }).Count -gt 0) { 'failed' } else { 'passed' }
+    $failureStage = 'baseline'
     $baselineComparison = Get-BaselineComparison -Baseline $baseline -ExecutionStatus $executionStatus -VerifierResults $verifierResults
     $overallStatus = if ($executionStatus -eq 'failed') {
         'failed'
@@ -255,12 +274,15 @@ try {
     $result = [ordered]@{
         execution_status = $executionStatus
         overall_status   = $overallStatus
+        execution_mode   = $executionMode
         setup_step       = $setupStep
         execution_step   = $executionStep
+        agent_step       = $agentStep
         verifier_results = $verifierResults
         artifacts        = @($artifacts)
         steps            = @($stepSummaries)
         baseline_comparison = $baselineComparison
+        failure_stage    = $null
         error            = $null
     }
 }
@@ -268,12 +290,15 @@ catch {
     $result = [ordered]@{
         execution_status = 'failed'
         overall_status   = 'failed'
+        execution_mode   = $executionMode
         setup_step       = $setupStep
         execution_step   = $executionStep
+        agent_step       = $agentStep
         verifier_results = $verifierResults
         artifacts        = @($artifacts)
         steps            = @($stepSummaries)
         baseline_comparison = $baselineComparison
+        failure_stage    = $failureStage
         error            = $_.Exception.Message
     }
 }
@@ -310,30 +335,46 @@ finally {
     Ensure-HarnessDirectory -Path (Join-Path -Path $reportRoot -ChildPath 'artifacts')
 
     if ($task -and $PromoteBaseline -and $result.execution_status -eq 'passed') {
-        $baseline = [ordered]@{
-            task_id          = $task.task_id
-            baseline_git_sha = $task.base_commit
-            expected_status  = $result.execution_status
-            verifier_summary = [ordered]@{}
+        $canPromote = $true
+        if ($executionMode -eq 'agent') {
+            $canPromote = $false
+            if ($task.PSObject.Properties.Name.Contains('baseline_policy') -and $task.baseline_policy) {
+                $canPromote = $task.baseline_policy.PSObject.Properties.Name.Contains('is_baseline_candidate') -and [bool]$task.baseline_policy.is_baseline_candidate
+            }
         }
 
-        foreach ($verifierResult in $result.verifier_results) {
-            $baseline.verifier_summary[$verifierResult.name] = $verifierResult.status
-        }
+        if ($canPromote) {
+            $baseline = [ordered]@{
+                task_id          = $task.task_id
+                baseline_git_sha = $task.base_commit
+                expected_status  = $result.execution_status
+                verifier_summary = [ordered]@{}
+            }
 
-        Write-HarnessJsonFile -Data $baseline -Path $baselinePath
+            foreach ($verifierResult in $result.verifier_results) {
+                $baseline.verifier_summary[$verifierResult.name] = $verifierResult.status
+            }
 
-        $result.baseline_comparison = [ordered]@{
-            status               = 'promoted'
-            previous_status      = $baselineComparison.status
-            baseline_found       = $true
-            baseline_git_sha     = $task.base_commit
-            expected_status      = $result.execution_status
-            actual_status        = $result.execution_status
-            verifier_differences = @()
+            Write-HarnessJsonFile -Data $baseline -Path $baselinePath
+
+            $result.baseline_comparison = [ordered]@{
+                status               = 'promoted'
+                previous_status      = $baselineComparison.status
+                baseline_found       = $true
+                baseline_git_sha     = $task.base_commit
+                expected_status      = $result.execution_status
+                actual_status        = $result.execution_status
+                verifier_differences = @()
+            }
+            $result.overall_status = 'passed'
+            $manifest.baseline_ref = $baselinePath
         }
-        $result.overall_status = 'passed'
-        $manifest.baseline_ref = $baselinePath
+        else {
+            $result.execution_status = 'failed'
+            $result.overall_status = 'failed'
+            $result.failure_stage = 'baseline'
+            $result.error = "当前 agent 任务未开启 baseline promotion：请设置 baseline_policy.is_baseline_candidate=true"
+        }
     }
 
     Write-HarnessJsonFile -Data $manifest -Path (Join-Path -Path $reportRoot -ChildPath 'manifest.json')
