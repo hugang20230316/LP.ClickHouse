@@ -1,0 +1,71 @@
+{
+  "task_id": "HARNESS-003",
+  "schema_version": 1,
+  "title": "使用 Codex 为示例 API 添加 Swagger",
+  "goal": "在 samples/LP.ClickHouse.Api 中引入 Swagger 文档生成与 UI，使控制器接口可通过 /swagger/v1/swagger.json 和 /swagger/index.html 访问，同时保证 LP.ClickHouse 全量构建和测试通过。",
+  "repo": ".",
+  "base_commit": "d914d651bc6ba35a506c6c54966f087da17c41fd",
+  "setup_script": "setup.ps1",
+  "execution_script": "execute.ps1",
+  "execution_mode": "agent",
+  "agent": {
+    "provider": "codex",
+    "model": "gpt-5.4",
+    "reasoning_effort": "xhigh",
+    "prompt_version": "v1",
+    "output_mode": "file-map",
+    "timeout_sec": 600,
+    "max_attempts": 2,
+    "context_max_bytes": 120000
+  },
+  "baseline_policy": {
+    "is_baseline_candidate": false
+  },
+  "experiment": {
+    "label": "codex-swagger-v1",
+    "variant_id": "codex-gpt5.4-xhigh-swagger-v1",
+    "group_key": "harness-003"
+  },
+  "allowed_paths": [
+    "samples/LP.ClickHouse.Api/Program.cs",
+    "samples/LP.ClickHouse.Api/LP.ClickHouse.Api.csproj"
+  ],
+  "forbidden_paths": [
+    ".ai-harness/**",
+    ".git/**"
+  ],
+  "fixtures_manifest": "fixtures/manifest.json",
+  "verifiers": [
+    {
+      "name": "build",
+      "type": "build",
+      "commands": [
+        "dotnet build LP.ClickHouse.slnx -v minimal"
+      ]
+    },
+    {
+      "name": "test",
+      "type": "test",
+      "commands": [
+        "dotnet test LP.ClickHouse.slnx -v minimal"
+      ]
+    },
+    {
+      "name": "diff-scope",
+      "type": "diff-scope"
+    },
+    {
+      "name": "output-check",
+      "type": "output-check",
+      "paths": [
+        "samples/LP.ClickHouse.Api/bin/Debug/net8.0/LP.ClickHouse.Api.dll",
+        "tests/LP.ClickHouse.Tests/bin/Debug/net8.0/LP.ClickHouse.Tests.dll"
+      ]
+    }
+  ],
+  "expected_artifacts": [
+    "samples/LP.ClickHouse.Api/bin/Debug/net8.0/LP.ClickHouse.Api.dll",
+    "tests/LP.ClickHouse.Tests/bin/Debug/net8.0/LP.ClickHouse.Tests.dll"
+  ],
+  "timeout_sec": 900
+}
